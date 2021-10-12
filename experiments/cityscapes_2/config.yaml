@@ -1,0 +1,85 @@
+dataset: # Required.
+  type: cityscapes_semi_cp
+  train:
+    data_root: /path/to/cityscapes
+    data_list: /path/to/cityscapes/fine_train.txt
+    flip: True
+    GaussianBlur: False
+    rand_resize: [0.5, 2.0]
+    #rand_rotation: [-10.0, 10.0]
+    crop:
+      type: rand
+      size: [769, 769] # crop image with HxW size
+    acm:
+      number: 3
+      area_thresh: 0.005
+      area_thresh2: 0.01
+      no_pad: True
+      no_slim: True
+  val:
+    data_root: /path/to/cityscapes
+    data_list: /path/to/cityscapes/fine_val.txt
+    crop:
+      type: center
+      size: [769, 769] # crop image with HxW size
+  acp:
+    rand_resize: [0.1, 2.0]
+    prob: 0.5
+    momentum: 0.999
+    number: 3
+    prob: 0.5
+  batch_size: 2
+  n_sup: 1488
+  noise_std: 0.1
+  workers: 2
+  mean: [123.675, 116.28, 103.53]
+  std: [58.395, 57.12, 57.375]
+  ignore_label: 255
+
+trainer: # Required.
+  epochs: 200
+  start_epochs: 0
+  eval_on: True
+  optimizer:
+    type: SGD
+    kwargs:
+      lr: 0.01
+      momentum: 0.9
+      weight_decay: 0.0001
+  lr_scheduler:
+    mode: poly
+    kwargs:
+      power: 0.9
+
+saver:
+  snapshot_dir: checkpoints
+  pretrain: ''
+
+criterion:
+  cons:
+    sample: True
+    gamma: 2
+  type: ohem
+  kwargs:
+    thresh: 0.7
+    min_kept: 100000
+
+net: # Required.
+  num_classes: 19
+  sync_bn: True
+  ema_decay: 0.99
+  aux_loss:
+    aux_plane: 1024
+    loss_weight: 0.4
+  encoder:
+    type: semseg.models.resnet.resnet101
+    kwargs:
+      multi_grid: True
+      zero_init_residual: True
+      fpn: True
+      replace_stride_with_dilation: [False, True, True]  #layer0...1 is fixed, layer2...4
+  decoder:
+    type: semseg.models.decoder.dec_deeplabv3_plus
+    kwargs:
+      inner_planes: 256
+      dilations: [12, 24, 36]
